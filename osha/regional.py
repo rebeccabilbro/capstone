@@ -41,30 +41,19 @@ for each_line in csvfile:
     fatality_list.append(list_row[1])
 csvfile.close( )
 
-state_dict = {}
+
 ao_dict = {}
 for ao in ao_list:
   if ao in ao_dict:
       ao_dict[ao] = ao_dict[ao] + 1
   else:
       ao_dict[ao] = 1
-  if   month == "12" or month == "1" or month == "2":
-      season = "Winter"
-  elif month == "3" or month == "4" or month == "5":
-      season = "Spring"
-  elif month == "6" or month == "7" or month == "8":
-      season = "Summer"
-  else:
-      season = "Fall"
-  if season in season_dict:
-      season_dict[season] = season_dict[season] + 1
-  else:
-      season_dict[season] = 1
 
-month_pct_dict = {}
-season_pct_dict = {}
-number_of_month_codes = len( month_list )
-for month in month_dict:
-    month_pct_dict[month] = float( month_dict[month] ) / number_of_month_codes * 100
-for season in season_dict:
-    season_pct_dict[season] = float( season_dict[season] ) / number_of_month_codes * 100
+fifty = pd.DataFrame(statedata)
+fifty = fifty[np.abs(fifty.totals-fifty.totals.mean())<=(3*fifty.totals.std())] 
+fifty.plot(kind='bar', stacked=False, figsize=(16, 4))
+plt.title("Frequency of fatalities and catastrophic events by state (except CA)")
+plt.xlabel("United States")
+plt.ylabel("Frequency")
+plt.show()
+
