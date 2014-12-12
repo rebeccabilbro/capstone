@@ -16,44 +16,76 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
-from numpy import corrcoef, sum, log, arange
-from numpy.random import rand
-from pylab import pcolor, show, colorbar, xticks, yticks
+from sklearn.linear_model import LinearRegression
+
 
 ##########################################################################
-## Constants
+## Visualizations
 ##########################################################################
-year=['1984','1985','1986','1987','1988','1989','1990','1991','1992','1993','1994','1995',
-      '1996','1997','1998','1999','2000','2001','2002','2003','2004','2005','2006','2007',
-      '2008','2009','2010','2011','2012','2013','2014']
+statedata = pd.read_csv("../data/incidents_state_totals.csv", usecols=range(2), index_col='state')
 
+def state_view():
+    statedata.plot(kind='bar', stacked=False, figsize=(16, 4))
+    plt.title("Frequency of fatalities and catastrophic events by state")
+    plt.xlabel("United States")
+    plt.ylabel("Frequency")
+    plt.show()
 
-incidents = "../data/incidents_year_state.csv"
-csvfile = open(incidents)
+def no_outliers():
+    fifty = statedata.drop(statedata.index[[4,41]])
+    fifty.plot(kind='bar', stacked=False, figsize=(16, 4))
+    plt.title("Frequency of fatalities and catastrophic events by state (except CA and SD)")
+    plt.xlabel("United States")
+    plt.ylabel("Frequency")
+    plt.show()
 
-ao_list = []
-fatality_list = []
-for each_line in csvfile:
-    list_row = each_line.split(',')
-    if list_row[0] == 'report_id':
-        continue
-    ao_list.append(list_row[0])
-    fatality_list.append(list_row[1])
-csvfile.close( )
+def change_over_time():
+    statehistory = pd.read_csv("../data/incidents_state_totals.csv", index_col='state')
+    statehistory.drop('totals', axis=1, inplace=True)
+    statehistory.drop('totals_to_1990', axis=1, inplace=True)
+    statehistory.drop('totals_since_2010', axis=1, inplace=True)
+    statehistory = statehistory.drop(statedata.index[[4,41]])
+    statehistory.plot(kind='bar', stacked=True, figsize=(16, 8))
+    plt.title("State change in fatal and catastrophic events over time")
+    plt.xlabel("United States")
+    plt.ylabel("Frequency")
+    plt.show()
 
+##########################################################################
+## Computations
+##########################################################################
+statetotals = pd.read_csv("../data/incidents_state_totals.csv")
+df = pd.DataFrame(statetotals, columns=['state', 'totals_to_1995' , 'totals_to_2000', 'totals_to_2005', 'totals_to_2010'])
 
-ao_dict = {}
-for ao in ao_list:
-  if ao in ao_dict:
-      ao_dict[ao] = ao_dict[ao] + 1
-  else:
-      ao_dict[ao] = 1
+def state_totals():
+    change = []
 
-fifty = pd.DataFrame(statedata)
-fifty = fifty[np.abs(fifty.totals-fifty.totals.mean())<=(3*fifty.totals.std())] 
-fifty.plot(kind='bar', stacked=False, figsize=(16, 4))
-plt.title("Frequency of fatalities and catastrophic events by state (except CA)")
-plt.xlabel("United States")
-plt.ylabel("Frequency")
-plt.show()
+    for index, row in df.iterrows():
+        n = ((row['totals_to_1995']-row['totals_to_2005'])+ (row['totals_to_2000']-row['totals_to_2010']))/2
+        change.append((n, row['state']))
+    rank = sorted(change, key=lambda x: x[0])
 
+def coeff_anal():
+    #Alabama, Georgia, South Carolina, Virginia
+    SE = [(df.loc[0, 'totals_to_1995'] + df.loc[10, 'totals_to_1995'] + df.loc[40, 'totals_to_1995']+ df.loc[46, 'totals_to_1995']),
+          (df.loc[0, 'totals_to_2000'] + df.loc[10, 'totals_to_2000'] + df.loc[40, 'totals_to_2000']+ df.loc[46, 'totals_to_2000']),
+          (df.loc[0, 'totals_to_2005'] + df.loc[10, 'totals_to_2005'] + df.loc[40, 'totals_to_2005']+ df.loc[46, 'totals_to_2005']),
+          (df.loc[0, 'totals_to_2010'] + df.loc[10, 'totals_to_2010'] + df.loc[40, 'totals_to_2010']+ df.loc[46, 'totals_to_2010'])]
+
+    #Connecticut, Massachusetts, New Hampshire, New York
+    NE = [(df.loc[6, 'totals_to_1995'] + df.loc[21, 'totals_to_1995'] + df.loc[29, 'totals_to_1995'] + df.loc[31, 'totals_to_1995']),
+          (df.loc[6, 'totals_to_2000'] + df.loc[21, 'totals_to_2000'] + df.loc[29, 'totals_to_2000'] + df.loc[31, 'totals_to_2000']),
+          (df.loc[6, 'totals_to_2005'] + df.loc[21, 'totals_to_2005'] + df.loc[29, 'totals_to_2005'] + df.loc[31, 'totals_to_2005']),
+          (df.loc[6, 'totals_to_2010'] + df.loc[21, 'totals_to_2010'] + df.loc[29, 'totals_to_2010'] + df.loc[31, 'totals_to_2010'])]
+
+    print stats.pearsonr(SE, NE)
+
+def run():
+    state_view()
+    no_outliers()
+    change_over_time()
+    state_totals()
+    coeff_anal()
+    
+if __name__ == '__main__':
+    run()
